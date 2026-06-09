@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BTC Signal Bot - Señales</title>
+    <title>BTC Signal Bot</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
@@ -11,13 +11,25 @@
     <div class="container">
         <header>
             <h1>₿ Señales BTC</h1>
-            <div class="status" id="status">Conectando...</div>
+            <div class="header-right">
+                <button class="sound-btn" id="sound-btn" title="Activar sonido">🔇</button>
+                <div class="status" id="status">Conectando...</div>
+            </div>
         </header>
 
         <div class="price-bar glass">
             <span class="price-label">BTC/USDT</span>
             <span class="price-value" id="price">--</span>
-            <span class="update-info" id="update-info">Actualización: cada 30s</span>
+            <span class="session-badge" id="session">--</span>
+            <span class="update-info">Cada 30s</span>
+        </div>
+
+        <div class="stats-bar glass" id="stats-bar">
+            <div class="stat"><span class="stat-label">Señales</span><span id="stat-total">0</span></div>
+            <div class="stat"><span class="stat-label">Ganadas</span><span id="stat-wins" class="green">0</span></div>
+            <div class="stat"><span class="stat-label">Perdidas</span><span id="stat-losses" class="red">0</span></div>
+            <div class="stat"><span class="stat-label">Win Rate</span><span id="stat-winrate">0%</span></div>
+            <div class="stat"><span class="stat-label">Confluencia Prom</span><span id="stat-confluence">0%</span></div>
         </div>
 
         <div class="timeframe-tabs">
@@ -27,11 +39,10 @@
         </div>
 
         <div class="grid">
-            <div class="card glass signal-message-card">
+            <div class="card glass signal-message-card" id="signal-card">
                 <h2>📢 Señal Actual</h2>
                 <pre class="signal-message" id="signal-message">Esperando señal...</pre>
             </div>
-
             <div class="card glass chart-card">
                 <h2>📈 Precio</h2>
                 <canvas id="priceChart"></canvas>
@@ -39,11 +50,11 @@
         </div>
 
         <div class="card glass results-card">
-            <h2>✅ Resultados Verificados</h2>
-            <div class="results-table" id="results-table">
+            <h2>✅ Resultados Verificados (Trailing Stop activo)</h2>
+            <div class="results-table">
                 <table>
                     <thead>
-                        <tr><th>Hora</th><th>Señal</th><th>Precio</th><th>TP1</th><th>SL</th><th>Resultado</th></tr>
+                        <tr><th>Hora</th><th>Señal</th><th>Precio</th><th>TP1</th><th>SL</th><th>Trailing</th><th>Confluencia</th><th>Resultado</th></tr>
                     </thead>
                     <tbody id="results-body"></tbody>
                 </table>
@@ -51,17 +62,20 @@
         </div>
 
         <div class="card glass indicators-card">
-            <h2>📊 Indicadores Técnicos</h2>
+            <h2>📊 Indicadores (16)</h2>
             <div class="indicators-grid" id="indicators-grid"></div>
         </div>
 
         <div class="grid">
             <div class="card glass">
-                <h2>⛓️ On-Chain</h2>
+                <h2>⛓️ On-Chain + Derivados</h2>
                 <div class="data-list">
                     <div class="data-item"><span>Hashrate</span><span id="hashrate">--</span></div>
-                    <div class="data-item"><span>Comisiones (sat/vB)</span><span id="fees">--</span></div>
-                    <div class="data-item"><span>Ajuste Dificultad</span><span id="difficulty">--</span></div>
+                    <div class="data-item"><span>Comisiones</span><span id="fees">--</span></div>
+                    <div class="data-item"><span>Dificultad</span><span id="difficulty">--</span></div>
+                    <div class="data-item"><span>Funding Rate</span><span id="funding">--</span></div>
+                    <div class="data-item"><span>Liquidaciones 24h</span><span id="liquidations">--</span></div>
+                    <div class="data-item"><span>Dominancia BTC</span><span id="dominance">--</span></div>
                 </div>
             </div>
             <div class="card glass">

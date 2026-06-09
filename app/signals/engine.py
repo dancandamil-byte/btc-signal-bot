@@ -34,6 +34,41 @@ def _score_indicators(indicators: list[Indicator]) -> float:
     return total / len(indicators)
 
 
+def _confluence_check(indicators: list[Indicator]) -> tuple[float, str]:
+    """Calcula % de confluencia. Retorna (ratio, dirección)."""
+    buys = sum(1 for i in indicators if i.signal in (SignalType.BUY, SignalType.STRONG_BUY))
+    sells = sum(1 for i in indicators if i.signal in (SignalType.SELL, SignalType.STRONG_SELL))
+    total = len(indicators)
+    if total == 0:
+        return 0.0, "neutral"
+    buy_ratio = buys / total
+    sell_ratio = sells / total
+    if buy_ratio >= sell_ratio:
+        return buy_ratio, "buy"
+    return sell_ratio, "sell"
+
+
+def _get_session(hour_utc: int) -> str:
+    """Determina la sesión de trading actual."""
+    for name, hours in settings.sessions.items():
+        if hour_utc in hours:
+            return name
+    return "fuera_horario"
+
+
+def _is_low_liquidity(hour_utc: int) -> bool:
+    return hour_utc in settings.low_liquidity_hours
+
+
+def _volatility_filter(df: pd.DataFrame) -> tuple[bool, float]:
+    """Retorna (demasiado_volatil, atr_ratio)."""
+    atr = ta.volatility.AverageTrueRange(df["high"], df["low"], df["close"], window=14).average_true_range()
+    current_atr = atr.iloc[-1]
+    avg_atr = atr.rolling(50).mean().iloc[-1]
+    ratio = current_atr / avg_atr if avg_atr > 0 else 1.0
+    return ratio > settings.max_atr_multiplier, ratio
+
+
 def _score_to_signal(score: float) -> SignalType:
     if score >= 0.4:
         return SignalType.STRONG_BUY
@@ -52,7 +87,6 @@ def _calculate_trade_setup(df: pd.DataFrame, signal: SignalType, price: float) -
 
     atr = ta.volatility.AverageTrueRange(df["high"], df["low"], df["close"], window=14).average_true_range().iloc[-1]
     spread = atr * 0.3
-
     is_buy = signal in (SignalType.BUY, SignalType.STRONG_BUY)
 
     if is_buy:
@@ -80,12 +114,18 @@ def _calculate_trade_setup(df: pd.DataFrame, signal: SignalType, price: float) -
     )
 
 
-def _generate_mensaje(signal: SignalType, price: float, setup: TradeSetup | None, confidence: float, timeframe: str) -> str:
+def _generate_mensaje(signal: SignalType, price: float, setup: TradeSetup | None,
+                       confidence: float, timeframe: str, confluence: float,
+                       session: str, volatility_ratio: float, filtered: str | None) -> str:
+    if filtered:
+        return f"⚠️ Señal filtrada: {filtered}\n📍 Precio: ${price:,.0f} | TF: {timeframe}"
+
     if signal == SignalType.NEUTRAL:
-        return f"⏸️ BTC Sin señal clara | Precio: ${price:,.0f} | TF: {timeframe} | Confianza: {confidence}%"
+        return f"⏸️ BTC Sin señal clara | ${price:,.0f} | TF: {timeframe} | Confluencia: {confluence:.0%}"
 
     accion = _SIGNAL_ESPANOL[signal]
-    msg = f"""━━━━━━━━━━━━━━━━━━━━━
+    session_map = {"asia": "🌏 Asia", "europa": "🌍 Europa", "ny": "🌎 Nueva York", "fuera_horario": "⚠️ Fuera horario"}
+    return f"""━━━━━━━━━━━━━━━━━━━━━
 {accion} | BTC/USDT
 ━━━━━━━━━━━━━━━━━━━━━
 📍 Entrada: ${setup.entry_min:,.0f} / ${setup.entry_max:,.0f}
@@ -98,14 +138,18 @@ def _generate_mensaje(signal: SignalType, price: float, setup: TradeSetup | None
 
 🛑 SL: ${setup.sl:,.0f}
 
-⏱️ Timeframe: {timeframe}
-📊 Confianza: {confidence}%
+⏱️ TF: {timeframe} | {session_map.get(session, session)}
+📊 Confianza: {confidence:.1f}%
+🔗 Confluencia: {confluence:.0%}
+📈 Volatilidad: {volatility_ratio:.1f}x
 ━━━━━━━━━━━━━━━━━━━━━"""
-    return msg
 
 
 async def generate_signal(df: pd.DataFrame, timeframe: str) -> SignalResult:
     price = df["close"].iloc[-1]
+    now = datetime.now(timezone.utc)
+    hour_utc = now.hour
+    session = _get_session(hour_utc)
 
     indicators = calculate_indicators(df)
     tech_score = _score_indicators(indicators)
@@ -123,13 +167,34 @@ async def generate_signal(df: pd.DataFrame, timeframe: str) -> SignalResult:
     )
 
     confidence = min(abs(final_score) * 100, 100)
-    signal = _score_to_signal(final_score)
+    raw_signal = _score_to_signal(final_score)
+
+    # Filtros
+    confluence_ratio, confluence_dir = _confluence_check(indicators)
+    too_volatile, vol_ratio = _volatility_filter(df)
+    low_liq = _is_low_liquidity(hour_utc)
+
+    filtered = None
+    signal = raw_signal
+
+    if raw_signal != SignalType.NEUTRAL:
+        if confluence_ratio < settings.confluence_threshold:
+            filtered = f"Confluencia baja ({confluence_ratio:.0%} < {settings.confluence_threshold:.0%})"
+            signal = SignalType.NEUTRAL
+        elif too_volatile:
+            filtered = f"Volatilidad extrema ({vol_ratio:.1f}x promedio)"
+            signal = SignalType.NEUTRAL
+        elif low_liq and settings.session_filter_enabled:
+            filtered = f"Baja liquidez (hora UTC {hour_utc})"
+            signal = SignalType.NEUTRAL
+
     trade_setup = _calculate_trade_setup(df, signal, price)
-    mensaje = _generate_mensaje(signal, price, trade_setup, round(confidence, 1), timeframe)
+    mensaje = _generate_mensaje(signal, price, trade_setup, confidence, timeframe,
+                                 confluence_ratio, session, vol_ratio, filtered)
 
     return SignalResult(
         timeframe=timeframe,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=now,
         price=price,
         signal=signal,
         confidence=round(confidence, 1),
@@ -138,6 +203,10 @@ async def generate_signal(df: pd.DataFrame, timeframe: str) -> SignalResult:
         sentiment_score=round(sentiment_score, 4),
         trade_setup=trade_setup,
         mensaje=mensaje,
+        confluence=round(confluence_ratio, 4),
+        session=session,
+        volatility_ratio=round(vol_ratio, 2),
+        filtered_reason=filtered,
         indicators=indicators,
         onchain=onchain,
         sentiment=sentiment,

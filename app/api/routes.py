@@ -37,8 +37,17 @@ async def get_history(timeframe: str):
 
 @router.get("/results/{timeframe}")
 async def get_results(timeframe: str):
-    """Historial de resultados verificados (TP/SL alcanzados)."""
-    return data_manager.get_results(timeframe)
+    return data_manager.get_results_db(timeframe)
+
+
+@router.get("/stats/{timeframe}")
+async def get_stats(timeframe: str):
+    return data_manager.get_stats(timeframe).model_dump()
+
+
+@router.get("/stats")
+async def get_stats_all():
+    return data_manager.get_stats().model_dump()
 
 
 @router.get("/health")

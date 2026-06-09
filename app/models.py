@@ -22,6 +22,9 @@ class OnChainData(BaseModel):
     hashrate_trend: str = "desconocido"
     estimated_fees: float | None = None
     difficulty_adjustment: float | None = None
+    funding_rate: float | None = None
+    liquidations_24h: float | None = None
+    btc_dominance: float | None = None
     signal: SignalType = SignalType.NEUTRAL
 
 
@@ -50,6 +53,7 @@ class TradeResult(str, Enum):
     TP4_ALCANZADO = "TP4_ALCANZADO"
     TP5_ALCANZADO = "TP5_ALCANZADO"
     SL_ALCANZADO = "SL_ALCANZADO"
+    TRAILING_STOP = "TRAILING_STOP"
 
 
 class SignalResult(BaseModel):
@@ -64,6 +68,11 @@ class SignalResult(BaseModel):
     trade_setup: TradeSetup | None = None
     mensaje: str = ""
     resultado: TradeResult = TradeResult.PENDIENTE
+    confluence: float = 0.0
+    session: str = ""
+    volatility_ratio: float = 1.0
+    filtered_reason: str | None = None
+    trailing_sl: float | None = None
     indicators: list[Indicator] = []
     onchain: OnChainData = OnChainData()
     sentiment: SentimentData = SentimentData()
@@ -73,3 +82,12 @@ class HealthResponse(BaseModel):
     status: str = "ok"
     timestamp: datetime
     uptime_seconds: float
+
+
+class Stats(BaseModel):
+    total_signals: int = 0
+    wins: int = 0
+    losses: int = 0
+    pending: int = 0
+    win_rate: float = 0.0
+    avg_confluence: float = 0.0
