@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     weight_onchain: float = 0.2
     weight_sentiment: float = 0.2
     # Confluencia
-    confluence_threshold: float = 0.7
+    confluence_threshold: float = 0.6
     # Riesgo
     max_atr_multiplier: float = 2.0
     trailing_stop_enabled: bool = True
