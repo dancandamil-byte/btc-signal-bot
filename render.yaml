@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: btc-signal-bot
+    runtime: python
+    buildCommand: pip install uv && uv sync
+    startCommand: uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.12"
+      - key: BOT_SESSION_FILTER_ENABLED
+        value: "false"

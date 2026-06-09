@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     }
     low_liquidity_hours: list[int] = [22, 23, 0, 1, 2, 3]
     # DB
-    db_path: str = "signals.db"
+    db_path: str = "/tmp/signals.db"
 
     class Config:
         env_prefix = "BOT_"
