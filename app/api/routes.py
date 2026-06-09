@@ -18,7 +18,7 @@ async def get_all_signals():
 async def get_signal(timeframe: str):
     signal = data_manager.get_signal(timeframe)
     if not signal:
-        raise HTTPException(404, f"No signal for {timeframe}")
+        raise HTTPException(404, f"Sin señal para {timeframe}")
     return signal.model_dump()
 
 
@@ -26,7 +26,7 @@ async def get_signal(timeframe: str):
 async def get_indicators(timeframe: str):
     signal = data_manager.get_signal(timeframe)
     if not signal:
-        raise HTTPException(404, f"No data for {timeframe}")
+        raise HTTPException(404, f"Sin datos para {timeframe}")
     return [i.model_dump() for i in signal.indicators]
 
 
@@ -35,11 +35,13 @@ async def get_history(timeframe: str):
     return [s.model_dump() for s in data_manager.get_history(timeframe)]
 
 
+@router.get("/results/{timeframe}")
+async def get_results(timeframe: str):
+    """Historial de resultados verificados (TP/SL alcanzados)."""
+    return data_manager.get_results(timeframe)
+
+
 @router.get("/health")
 async def health():
     now = datetime.now(timezone.utc)
-    return HealthResponse(
-        status="ok",
-        timestamp=now,
-        uptime_seconds=(now - _start_time).total_seconds(),
-    )
+    return HealthResponse(status="ok", timestamp=now, uptime_seconds=(now - _start_time).total_seconds())

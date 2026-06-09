@@ -82,6 +82,25 @@ canvas { width: 100% !important; height: 250px !important; }
 .data-list { display: flex; flex-direction: column; gap: 10px; }
 .data-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
+.signal-message-card { transition: border-color 0.3s; }
+.signal-message-card.buy { border-color: rgba(34, 197, 94, 0.4); }
+.signal-message-card.sell { border-color: rgba(239, 68, 68, 0.4); }
+.signal-message-card.neutral { border-color: rgba(234, 179, 8, 0.4); }
+.signal-message {
+    font-family: 'Courier New', monospace; font-size: 0.85rem; white-space: pre-wrap;
+    color: #e0e0e0; line-height: 1.6; margin: 0;
+}
+
+.update-info { font-size: 0.75rem; opacity: 0.5; }
+
+.results-card { margin-bottom: 20px; }
+.results-table { overflow-x: auto; }
+.results-table table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.results-table th, .results-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.results-table th { opacity: 0.6; text-transform: uppercase; font-size: 0.7rem; }
+.results-table tr.win td { color: #22c55e; }
+.results-table tr.loss td { color: #ef4444; }
+
 @media (max-width: 768px) {
     .grid { grid-template-columns: 1fr; }
     .indicators-grid { grid-template-columns: repeat(2, 1fr); }

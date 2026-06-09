@@ -1,22 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BTC Signal Bot</title>
+    <title>BTC Signal Bot - Señales</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>₿ BTC Signal Bot</h1>
-            <div class="status" id="status">Connecting...</div>
+            <h1>₿ Señales BTC</h1>
+            <div class="status" id="status">Conectando...</div>
         </header>
 
         <div class="price-bar glass">
             <span class="price-label">BTC/USDT</span>
             <span class="price-value" id="price">--</span>
+            <span class="update-info" id="update-info">Actualización: cada 30s</span>
         </div>
 
         <div class="timeframe-tabs">
@@ -26,55 +27,49 @@
         </div>
 
         <div class="grid">
-            <div class="card glass" id="signal-card">
-                <h2>Signal</h2>
-                <div class="signal-badge" id="signal-badge">--</div>
-                <div class="confidence">
-                    <span>Confidence:</span>
-                    <span id="confidence">--%</span>
-                </div>
-                <div class="scores">
-                    <div class="score-item">
-                        <span>Technical</span>
-                        <span id="tech-score">--</span>
-                    </div>
-                    <div class="score-item">
-                        <span>On-Chain</span>
-                        <span id="onchain-score">--</span>
-                    </div>
-                    <div class="score-item">
-                        <span>Sentiment</span>
-                        <span id="sentiment-score">--</span>
-                    </div>
-                </div>
+            <div class="card glass signal-message-card">
+                <h2>📢 Señal Actual</h2>
+                <pre class="signal-message" id="signal-message">Esperando señal...</pre>
             </div>
 
             <div class="card glass chart-card">
-                <h2>Price History</h2>
+                <h2>📈 Precio</h2>
                 <canvas id="priceChart"></canvas>
             </div>
         </div>
 
+        <div class="card glass results-card">
+            <h2>✅ Resultados Verificados</h2>
+            <div class="results-table" id="results-table">
+                <table>
+                    <thead>
+                        <tr><th>Hora</th><th>Señal</th><th>Precio</th><th>TP1</th><th>SL</th><th>Resultado</th></tr>
+                    </thead>
+                    <tbody id="results-body"></tbody>
+                </table>
+            </div>
+        </div>
+
         <div class="card glass indicators-card">
-            <h2>Technical Indicators</h2>
+            <h2>📊 Indicadores Técnicos</h2>
             <div class="indicators-grid" id="indicators-grid"></div>
         </div>
 
         <div class="grid">
             <div class="card glass">
-                <h2>On-Chain</h2>
-                <div class="data-list" id="onchain-data">
+                <h2>⛓️ On-Chain</h2>
+                <div class="data-list">
                     <div class="data-item"><span>Hashrate</span><span id="hashrate">--</span></div>
-                    <div class="data-item"><span>Fees (sat/vB)</span><span id="fees">--</span></div>
-                    <div class="data-item"><span>Difficulty Adj</span><span id="difficulty">--</span></div>
+                    <div class="data-item"><span>Comisiones (sat/vB)</span><span id="fees">--</span></div>
+                    <div class="data-item"><span>Ajuste Dificultad</span><span id="difficulty">--</span></div>
                 </div>
             </div>
             <div class="card glass">
-                <h2>Sentiment</h2>
-                <div class="data-list" id="sentiment-data">
-                    <div class="data-item"><span>Fear & Greed</span><span id="fng-value">--</span></div>
-                    <div class="data-item"><span>Label</span><span id="fng-label">--</span></div>
-                    <div class="data-item"><span>Signal</span><span id="fng-signal">--</span></div>
+                <h2>😱 Sentimiento</h2>
+                <div class="data-list">
+                    <div class="data-item"><span>Miedo y Codicia</span><span id="fng-value">--</span></div>
+                    <div class="data-item"><span>Clasificación</span><span id="fng-label">--</span></div>
+                    <div class="data-item"><span>Señal</span><span id="fng-signal">--</span></div>
                 </div>
             </div>
         </div>

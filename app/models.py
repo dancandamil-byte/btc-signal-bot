@@ -19,7 +19,7 @@ class Indicator(BaseModel):
 
 
 class OnChainData(BaseModel):
-    hashrate_trend: str = "unknown"
+    hashrate_trend: str = "desconocido"
     estimated_fees: float | None = None
     difficulty_adjustment: float | None = None
     signal: SignalType = SignalType.NEUTRAL
@@ -27,8 +27,29 @@ class OnChainData(BaseModel):
 
 class SentimentData(BaseModel):
     fear_greed_index: int | None = None
-    fear_greed_label: str = "unknown"
+    fear_greed_label: str = "desconocido"
     signal: SignalType = SignalType.NEUTRAL
+
+
+class TradeSetup(BaseModel):
+    entry_min: float
+    entry_max: float
+    tp1: float
+    tp2: float
+    tp3: float
+    tp4: float
+    tp5: float
+    sl: float
+
+
+class TradeResult(str, Enum):
+    PENDIENTE = "PENDIENTE"
+    TP1_ALCANZADO = "TP1_ALCANZADO"
+    TP2_ALCANZADO = "TP2_ALCANZADO"
+    TP3_ALCANZADO = "TP3_ALCANZADO"
+    TP4_ALCANZADO = "TP4_ALCANZADO"
+    TP5_ALCANZADO = "TP5_ALCANZADO"
+    SL_ALCANZADO = "SL_ALCANZADO"
 
 
 class SignalResult(BaseModel):
@@ -40,6 +61,9 @@ class SignalResult(BaseModel):
     technical_score: float
     onchain_score: float
     sentiment_score: float
+    trade_setup: TradeSetup | None = None
+    mensaje: str = ""
+    resultado: TradeResult = TradeResult.PENDIENTE
     indicators: list[Indicator] = []
     onchain: OnChainData = OnChainData()
     sentiment: SentimentData = SentimentData()

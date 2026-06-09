@@ -2,7 +2,6 @@ let currentTf = '1m';
 let priceChart;
 const priceData = { labels: [], data: [] };
 
-// Chart setup
 function initChart() {
     const ctx = document.getElementById('priceChart').getContext('2d');
     priceChart = new Chart(ctx, {
@@ -10,14 +9,11 @@ function initChart() {
         data: {
             labels: priceData.labels,
             datasets: [{
-                label: 'BTC Price',
+                label: 'Precio BTC',
                 data: priceData.data,
                 borderColor: '#f7931a',
                 backgroundColor: 'rgba(247,147,26,0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.3,
-                pointRadius: 0
+                borderWidth: 2, fill: true, tension: 0.3, pointRadius: 0
             }]
         },
         options: {
@@ -35,24 +31,20 @@ function updateUI(data) {
     const signal = data[currentTf];
     if (!signal) return;
 
-    document.getElementById('price').textContent = `$${signal.price.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    document.getElementById('price').textContent = `$${signal.price.toLocaleString('es-CO', {minimumFractionDigits: 0})}`;
 
-    const badge = document.getElementById('signal-badge');
-    badge.textContent = signal.signal.replace('_', ' ');
-    badge.className = `signal-badge ${signal.signal}`;
+    // Mensaje de señal completo
+    document.getElementById('signal-message').textContent = signal.mensaje;
+    const msgCard = document.querySelector('.signal-message-card');
+    msgCard.className = `card glass signal-message-card ${signal.signal.includes('BUY') ? 'buy' : signal.signal.includes('SELL') ? 'sell' : 'neutral'}`;
 
-    document.getElementById('confidence').textContent = `${signal.confidence}%`;
-    document.getElementById('tech-score').textContent = signal.technical_score.toFixed(4);
-    document.getElementById('onchain-score').textContent = signal.onchain_score.toFixed(4);
-    document.getElementById('sentiment-score').textContent = signal.sentiment_score.toFixed(4);
-
-    // Indicators
+    // Indicadores
     const grid = document.getElementById('indicators-grid');
     grid.innerHTML = signal.indicators.map(i => `
         <div class="indicator-item">
             <div class="name">${i.name}</div>
             <div class="value">${i.value !== null ? i.value : '--'}</div>
-            <span class="signal-tag ${i.signal}">${i.signal.replace('_', ' ')}</span>
+            <span class="signal-tag ${i.signal}">${i.signal.includes('BUY') ? 'COMPRA' : i.signal.includes('SELL') ? 'VENTA' : 'NEUTRAL'}</span>
         </div>
     `).join('');
 
@@ -61,30 +53,46 @@ function updateUI(data) {
     document.getElementById('fees').textContent = signal.onchain.estimated_fees ?? '--';
     document.getElementById('difficulty').textContent = signal.onchain.difficulty_adjustment ? `${signal.onchain.difficulty_adjustment.toFixed(2)}%` : '--';
 
-    // Sentiment
+    // Sentimiento
     document.getElementById('fng-value').textContent = signal.sentiment.fear_greed_index ?? '--';
     document.getElementById('fng-label').textContent = signal.sentiment.fear_greed_label;
-    document.getElementById('fng-signal').textContent = signal.sentiment.signal.replace('_', ' ');
+    const fngSignal = signal.sentiment.signal;
+    document.getElementById('fng-signal').textContent = fngSignal.includes('BUY') ? 'COMPRA' : fngSignal.includes('SELL') ? 'VENTA' : 'NEUTRAL';
 
-    // Chart update
-    const time = new Date(signal.timestamp).toLocaleTimeString();
+    // Gráfico
+    const time = new Date(signal.timestamp).toLocaleTimeString('es-CO');
     priceData.labels.push(time);
     priceData.data.push(signal.price);
-    if (priceData.labels.length > 60) {
-        priceData.labels.shift();
-        priceData.data.shift();
-    }
+    if (priceData.labels.length > 60) { priceData.labels.shift(); priceData.data.shift(); }
     priceChart.update('none');
+}
+
+async function loadResults() {
+    try {
+        const resp = await fetch(`/api/results/${currentTf}`);
+        const results = await resp.json();
+        const tbody = document.getElementById('results-body');
+        tbody.innerHTML = results.slice(-20).reverse().map(r => {
+            const cls = r.resultado.includes('TP') ? 'win' : r.resultado.includes('SL') ? 'loss' : '';
+            return `<tr class="${cls}">
+                <td>${new Date(r.timestamp).toLocaleTimeString('es-CO')}</td>
+                <td>${r.signal.includes('BUY') ? '🟢 COMPRA' : '🔴 VENTA'}</td>
+                <td>$${r.price.toLocaleString('es-CO')}</td>
+                <td>$${r.tp1.toLocaleString('es-CO')}</td>
+                <td>$${r.sl.toLocaleString('es-CO')}</td>
+                <td>${r.resultado}</td>
+            </tr>`;
+        }).join('');
+    } catch (e) {}
 }
 
 // WebSocket
 function connect() {
     const ws = new WebSocket(`ws://${location.host}/ws`);
     const status = document.getElementById('status');
-
-    ws.onopen = () => { status.textContent = 'Live'; status.classList.remove('disconnected'); };
-    ws.onclose = () => { status.textContent = 'Disconnected'; status.classList.add('disconnected'); setTimeout(connect, 3000); };
-    ws.onmessage = (e) => updateUI(JSON.parse(e.data));
+    ws.onopen = () => { status.textContent = '🟢 En vivo'; status.classList.remove('disconnected'); };
+    ws.onclose = () => { status.textContent = '🔴 Desconectado'; status.classList.add('disconnected'); setTimeout(connect, 3000); };
+    ws.onmessage = (e) => { updateUI(JSON.parse(e.data)); loadResults(); };
 }
 
 // Tabs
@@ -93,10 +101,11 @@ document.querySelectorAll('.tab').forEach(tab => {
         document.querySelector('.tab.active').classList.remove('active');
         tab.classList.add('active');
         currentTf = tab.dataset.tf;
-        priceData.labels = [];
-        priceData.data = [];
+        priceData.labels = []; priceData.data = [];
+        loadResults();
     });
 });
 
 initChart();
 connect();
+loadResults();
